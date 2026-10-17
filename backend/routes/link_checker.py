@@ -31,12 +31,11 @@ def check_single():
     if include_reputation:
         reputation_result = ReputationService.check_url_reputation(url)
 
-    # Determine clear final security verdict
-    # Requirement: A website being access-restricted (403/WAF/Bot challenge) does NOT make it malicious or unsafe.
-    # If Google Safe Browsing / reputation is SAFE and no SSRF/malware is present, the security result is SAFE.
+    # Determine clear final verdict (Security & Reachability)
     avail = http_result.get("availability_status", "UNKNOWN")
     err_str = str(http_result.get("error") or "")
     rep_status = reputation_result.get("status") if reputation_result else None
+    http_status = http_result.get("http_status")
 
     if rep_status == "UNSAFE":
         security_verdict = "UNSAFE"
@@ -47,24 +46,23 @@ def check_single():
     elif avail == "CONNECTION_FAILED":
         security_verdict = "UNREACHABLE"
         verdict_reason = http_result.get("error") or "Domain could not be reached or resolved."
-    elif rep_status == "SAFE":
-        # Google Safe Browsing explicitly verified domain is clean
-        security_verdict = "SAFE"
-        if avail == "ACCESS_RESTRICTED":
-            verdict_reason = f"SAFE: Verified legitimate domain. (HTTP {http_result.get('http_status')}: {http_result.get('error') or 'Bot challenge / access restriction'})"
-        elif avail in ("BROKEN", "SERVER_ERROR"):
-            verdict_reason = f"SAFE: Verified clean reputation. (Endpoint currently returned HTTP {http_result.get('http_status')})"
-        else:
-            verdict_reason = "URL is verified safe and free of security threats."
+    elif avail == "BROKEN":
+        security_verdict = "BROKEN"
+        verdict_reason = f"Broken Link (HTTP {http_status or '404'}): The destination page or resource could not be found."
+        if rep_status == "SAFE":
+            verdict_reason += " Domain reputation is clean, but the requested endpoint is broken."
+    elif avail == "SERVER_ERROR":
+        security_verdict = "SERVER_ERROR"
+        verdict_reason = f"Server Error (HTTP {http_status or '5xx'}): Destination server encountered an internal failure."
+    elif avail == "ACCESS_RESTRICTED":
+        security_verdict = "ACCESS_RESTRICTED"
+        verdict_reason = f"Access Restricted (HTTP {http_status or '403'}): {http_result.get('error') or 'Authentication required or bot challenge'}."
     elif avail in ("WORKING", "REDIRECTED"):
         security_verdict = "SAFE"
-        verdict_reason = "URL is reachable, valid, and has no reported malicious threats."
-    elif avail in ("BROKEN", "ACCESS_RESTRICTED", "SERVER_ERROR"):
-        security_verdict = avail
-        verdict_reason = f"HTTP {http_result.get('http_status') or 'Error'}: Destination returned a non-success response. Not classified as malicious."
+        verdict_reason = "URL is verified reachable, valid, and free of security threats."
     else:
         security_verdict = "SAFE"
-        verdict_reason = "No security threat detected."
+        verdict_reason = "URL audit complete. No security threats detected."
 
     # 3. Store record in MongoDB
     db = get_db()
@@ -78,6 +76,7 @@ def check_single():
         "redirect_chain": http_result["redirect_chain"],
         "availability_status": http_result["availability_status"],
         "security_verdict": security_verdict,
+        "security_status": security_verdict,
         "verdict_reason": verdict_reason,
         "tls_valid": http_result["tls_valid"],
         "server": http_result.get("server"),
@@ -127,21 +126,34 @@ def check_batch():
         item_err = str(item.get("error") or "")
         item_avail = item["availability_status"]
         item_rep = rep_res.get("status") if rep_res else None
+        item_status = item.get("http_status")
 
         if item_rep == "UNSAFE":
             sec_verdict = "UNSAFE"
+            sec_reason = f"Threat confirmed by Google Safe Browsing: {rep_res.get('reason')}"
         elif "SSRF" in item_err or "restricted destination" in item_err.lower():
             sec_verdict = "ACCESS_RESTRICTED"
+            sec_reason = "Blocked by SSRF guard: target resolves to restricted internal IP."
         elif item_avail == "CONNECTION_FAILED":
             sec_verdict = "UNREACHABLE"
-        elif item_rep == "SAFE":
-            sec_verdict = "SAFE"
+            sec_reason = item.get("error") or "Domain could not be reached or resolved."
+        elif item_avail == "BROKEN":
+            sec_verdict = "BROKEN"
+            sec_reason = f"Broken Link (HTTP {item_status or '404'}): Resource not found."
+            if item_rep == "SAFE":
+                sec_reason += " Domain reputation is clean, but the resource is dead."
+        elif item_avail == "SERVER_ERROR":
+            sec_verdict = "SERVER_ERROR"
+            sec_reason = f"Server Error (HTTP {item_status or '5xx'}): Upstream failure."
+        elif item_avail == "ACCESS_RESTRICTED":
+            sec_verdict = "ACCESS_RESTRICTED"
+            sec_reason = f"Access Restricted (HTTP {item_status or '403'}): Authentication or bot challenge."
         elif item_avail in ("WORKING", "REDIRECTED"):
             sec_verdict = "SAFE"
-        elif item_avail in ("BROKEN", "ACCESS_RESTRICTED", "SERVER_ERROR"):
-            sec_verdict = item_avail
+            sec_reason = "URL is reachable, valid, and free of security threats."
         else:
             sec_verdict = "SAFE"
+            sec_reason = "Verified"
 
         scan_doc = {
             "user_id": g.current_user["_id"],
@@ -153,6 +165,8 @@ def check_batch():
             "redirect_chain": item["redirect_chain"],
             "availability_status": item["availability_status"],
             "security_verdict": sec_verdict,
+            "security_status": sec_verdict,
+            "verdict_reason": sec_reason,
             "tls_valid": item["tls_valid"],
             "server": item.get("server"),
             "content_type": item.get("content_type"),

@@ -101,13 +101,18 @@ export default function ScanDetails() {
               Primary Finding & Verdict
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
-              <StatusBadge status={isApk ? scan.overall_status : (scan.security_status || scan.availability_status)} size="lg" />
+              <StatusBadge status={isApk ? scan.overall_status : (scan.security_verdict || scan.security_status || scan.availability_status)} size="lg" />
               {scan.http_status && (
                 <span style={{ padding: '4px 8px', borderRadius: '4px', backgroundColor: 'var(--bg-secondary)', fontWeight: 700, fontFamily: 'monospace' }}>
                   HTTP {scan.http_status}
                 </span>
               )}
             </div>
+            {(scan.verdict_reason || scan.verdict_explanation) && (
+              <div style={{ fontSize: '0.86rem', color: '#cbd5e1', marginTop: '8px' }}>
+                {scan.verdict_reason || scan.verdict_explanation}
+              </div>
+            )}
           </div>
 
           <div style={{ textAlign: 'right' }}>

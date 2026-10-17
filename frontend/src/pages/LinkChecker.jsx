@@ -281,7 +281,7 @@ export default function LinkChecker() {
                       border: '#f59e0b',
                       bg: 'rgba(245, 158, 11, 0.15)',
                       glow: 'rgba(245, 158, 11, 0.25)',
-                      label: 'Access Restricted — 401/403 or network-level blocking',
+                      label: `Access Restricted — HTTP ${singleResult.http_status || '403'} (Authentication / Bot Protection Challenge)`,
                       badgeText: 'RESTRICTED'
                     };
                   }
@@ -291,7 +291,7 @@ export default function LinkChecker() {
                       border: '#ef4444',
                       bg: 'rgba(239, 68, 68, 0.12)',
                       glow: 'rgba(239, 68, 68, 0.25)',
-                      label: 'Broken Link — Destination returned a 4xx client status',
+                      label: `BROKEN LINK — Destination returned HTTP ${singleResult.http_status || '404'} (Resource Not Found)`,
                       badgeText: 'BROKEN LINK'
                     };
                   }
@@ -301,7 +301,7 @@ export default function LinkChecker() {
                       border: '#f97316',
                       bg: 'rgba(249, 115, 22, 0.12)',
                       glow: 'rgba(249, 115, 22, 0.25)',
-                      label: 'Server Error — Destination returned a 5xx upstream failure',
+                      label: `SERVER ERROR — Destination returned HTTP ${singleResult.http_status || '5xx'} (Upstream Failure)`,
                       badgeText: 'SERVER ERROR'
                     };
                   }
