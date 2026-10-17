@@ -1,0 +1,16 @@
+{
+  "name": "broken-link-checker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently --kill-others --names \"BACKEND,FRONTEND\" --prefix-colors \"cyan.bold,green.bold\" \"npm run backend\" \"npm run frontend\"",
+    "backend": "node scripts/run-python.js",
+    "frontend": "cd frontend && npm run dev -- --host 127.0.0.1",
+    "dev": "npm start",
+    "deploy": "npx vercel --prod",
+    "setup": "cd frontend && npm install && echo Done!"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

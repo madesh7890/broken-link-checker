@@ -1,0 +1,6 @@
+backend/venv
+backend/tests
+backend/uploads
+node_modules
+frontend/node_modules
+*.bat
