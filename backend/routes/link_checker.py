@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, g
 from services.db import get_db
 from services.url_checker import check_single_url, check_multiple_urls
 from services.reputation_service import ReputationService
+from services.whois_service import WhoisService
 from middleware.auth_guard import auth_required, optional_auth, rate_limit
 from bson import ObjectId
 
@@ -30,6 +31,9 @@ def check_single():
     reputation_result = None
     if include_reputation:
         reputation_result = ReputationService.check_url_reputation(url)
+
+    # 3. Query WHOIS / Domain Age Intelligence
+    whois_info = WhoisService.get_domain_info(url)
 
     # Determine clear final verdict (Security & Reachability)
     avail = http_result.get("availability_status", "UNKNOWN")
@@ -84,6 +88,7 @@ def check_single():
         "error": http_result["error"],
         "reputation_status": reputation_result.get("status") if reputation_result else "NOT_CHECKED",
         "reputation_details": reputation_result,
+        "whois": whois_info,
         "created_at": time.time()
     }
 

@@ -12,10 +12,12 @@ import {
   Clock,
   Layers,
   CheckCircle2,
-  AlertTriangle
+  AlertTriangle,
+  FileDown
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
+import { generatePdfReport } from '../services/pdfReportGenerator';
 
 export default function ScanDetails() {
   const { type, id } = useParams();
@@ -82,6 +84,23 @@ export default function ScanDetails() {
             </p>
           </div>
         </div>
+
+        <button
+          onClick={() => generatePdfReport(scan, isApk ? 'apk' : 'url')}
+          className="btn btn-secondary"
+          style={{
+            padding: '8px 16px',
+            fontSize: '0.85rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: 'var(--accent-cyan)',
+            borderColor: 'rgba(6, 182, 212, 0.4)'
+          }}
+        >
+          <FileDown size={15} />
+          <span>Export PDF Audit Report</span>
+        </button>
       </div>
 
       {/* Main Verdict Card */}

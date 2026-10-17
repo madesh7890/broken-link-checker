@@ -11,6 +11,7 @@ import LinkChecker from './pages/LinkChecker';
 import SuspiciousScanner from './pages/SuspiciousScanner';
 import ApkScanner from './pages/ApkScanner';
 import ApkEmbeddedUrls from './pages/ApkEmbeddedUrls';
+import QrScanner from './pages/QrScanner';
 import ScanHistory from './pages/ScanHistory';
 import ScanDetails from './pages/ScanDetails';
 import UserProfile from './pages/UserProfile';
@@ -77,6 +78,11 @@ export default function App() {
             <Route path="apk-embedded-urls/:id" element={
               <ProtectedRoute>
                 <ApkEmbeddedUrls />
+              </ProtectedRoute>
+            } />
+            <Route path="qr-scanner" element={
+              <ProtectedRoute>
+                <QrScanner />
               </ProtectedRoute>
             } />
             <Route path="history" element={

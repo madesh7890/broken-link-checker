@@ -23,10 +23,12 @@ import {
   Wifi,
   Bug,
   Radio,
-  Eye
+  Eye,
+  FileDown
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
+import { generatePdfReport } from '../services/pdfReportGenerator';
 
 const MAX_APK_MB = 50;
 const CHUNK_SIZE = 2.5 * 1024 * 1024; // 2.5 MB chunks safe for cloud edge routers (Vercel max ~4.5MB)
@@ -436,14 +438,33 @@ export default function ApkScanner() {
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
-                  <Link
-                    to={`/apk-embedded-urls/${scanResult._id}`}
-                    className="btn btn-primary"
-                    style={{ padding: '10px 18px', fontSize: '0.86rem' }}
-                  >
-                    <Link2 size={16} />
-                    <span>Embedded URLs ({scanResult.extracted_urls_count || 0})</span>
-                  </Link>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => generatePdfReport(scanResult, 'apk')}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '10px 16px',
+                        fontSize: '0.86rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: 'var(--accent-cyan)',
+                        borderColor: 'rgba(6, 182, 212, 0.4)'
+                      }}
+                    >
+                      <FileDown size={15} />
+                      <span>Export PDF Report</span>
+                    </button>
+                    <Link
+                      to={`/apk-embedded-urls/${scanResult._id}`}
+                      className="btn btn-primary"
+                      style={{ padding: '10px 18px', fontSize: '0.86rem' }}
+                    >
+                      <Link2 size={16} />
+                      <span>Embedded URLs ({scanResult.extracted_urls_count || 0})</span>
+                    </Link>
+                  </div>
 
                   {/* Threat Score Pill */}
                   <div style={{

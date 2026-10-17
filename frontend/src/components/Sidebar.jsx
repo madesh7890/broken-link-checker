@@ -11,7 +11,8 @@ import {
   Settings as SettingsIcon,
   ShieldCheck,
   Zap,
-  Activity
+  Activity,
+  QrCode
 } from 'lucide-react';
 
 const NAV_GROUPS = [
@@ -26,6 +27,7 @@ const NAV_GROUPS = [
     title: 'Security Scanners',
     items: [
       { to: '/link-checker', label: 'HTTP/S Link Checker', icon: Link2, badge: 'Fast' },
+      { to: '/qr-scanner', label: 'QR Code Scanner', icon: QrCode, badge: 'New' },
       { to: '/suspicious-checker', label: 'Suspicious URL Scanner', icon: AlertTriangle, badge: 'Shield' },
       { to: '/apk-scanner', label: 'APK Malware Scanner', icon: Smartphone, badge: 'Deep' },
       { to: '/apk-urls', label: 'APK Embedded URLs', icon: FileCode },

@@ -17,10 +17,13 @@ import {
   ArrowRight,
   Server,
   Lock,
-  Globe
+  Globe,
+  FileDown,
+  Calendar
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
+import { generatePdfReport } from '../services/pdfReportGenerator';
 
 const SAMPLE_URLS = [
   { label: '200 OK Demo', url: 'https://httpbin.org/status/200' },
@@ -345,20 +348,39 @@ export default function LinkChecker() {
                         </div>
                       )}
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Protocol Security</span>
-                      <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent-cyan)', fontSize: '0.95rem' }}>
-                        {singleResult.submitted_url.startsWith('https') ? '🔒 HTTPS (TLS Encrypted)' : '⚠️ HTTP (Cleartext)'}
-                      </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => generatePdfReport(singleResult, 'url')}
+                        className="btn btn-secondary"
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '0.8rem',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          color: 'var(--accent-cyan)',
+                          borderColor: 'rgba(6, 182, 212, 0.4)'
+                        }}
+                      >
+                        <FileDown size={14} />
+                        <span>Export PDF Report</span>
+                      </button>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Protocol Security</span>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent-cyan)', fontSize: '0.92rem' }}>
+                          {singleResult.submitted_url.startsWith('https') ? '🔒 HTTPS (TLS Encrypted)' : '⚠️ HTTP (Cleartext)'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
               })()}
 
-              {/* Metrics Row: Status Code, Response Latency, TLS */}
+              {/* Metrics Row: Status Code, Response Latency, TLS, WHOIS */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                 gap: '12px',
                 marginBottom: '20px'
               }}>
@@ -409,6 +431,28 @@ export default function LinkChecker() {
                       {singleResult.tls_valid === true ? 'Valid Certificate' : singleResult.tls_valid === false ? 'Untrusted / Expired' : 'Not Applicable'}
                     </span>
                   </div>
+                </div>
+
+                {/* WHOIS / Domain Age Card */}
+                <div style={{ padding: '16px', backgroundColor: 'rgba(16, 23, 41, 0.8)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, display: 'block', marginBottom: '6px' }}>
+                    Domain Age (WHOIS)
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Calendar size={16} style={{ color: 'var(--accent-purple)' }} />
+                    <span style={{
+                      fontWeight: 700,
+                      fontSize: '0.92rem',
+                      color: singleResult.whois?.is_newly_registered ? 'var(--accent-rose)' : '#fff'
+                    }}>
+                      {singleResult.whois?.age_formatted || 'Established'}
+                    </span>
+                  </div>
+                  {singleResult.whois?.registrar && (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={singleResult.whois.registrar}>
+                      Reg: {singleResult.whois.registrar}
+                    </span>
+                  )}
                 </div>
               </div>
 

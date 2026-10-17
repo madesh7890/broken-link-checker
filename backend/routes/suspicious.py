@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify, g
 from services.db import get_db
 from services.url_checker import check_single_url
 from services.reputation_service import ReputationService
+from services.whois_service import WhoisService
 from services.ssrf_guard import validate_url_safe
 from middleware.auth_guard import auth_required, rate_limit
 
@@ -222,10 +223,20 @@ def scan_suspicious_url():
     had_explicit_scheme = "://" in (data.get("url") or "")
     http_result = check_single_url(url, had_explicit_scheme=had_explicit_scheme)
 
-    # 5. Heuristic analysis
-    heuristics = analyze_url_heuristics(url, http_result)
+    # 5. WHOIS Domain Age Intelligence
+    whois_info = WhoisService.get_domain_info(url)
 
-    # 6. Overall Security Status & Risk Level
+    # 6. Heuristic analysis
+    heuristics = analyze_url_heuristics(url, http_result)
+    if whois_info.get("is_newly_registered"):
+        heuristics.append({
+            "type": "NEWLY_REGISTERED_DOMAIN",
+            "severity": "HIGH",
+            "title": f"Newly Created Domain ({whois_info.get('age_formatted')})",
+            "description": f"Domain was registered recently on {whois_info.get('created_date')}. Phishing kits and malicious disposable landing pages overwhelmingly rely on freshly minted domains."
+        })
+
+    # 7. Overall Security Status & Risk Level
     rep_status = reputation_res.get("status", "UNKNOWN")
     has_critical_threat = rep_status == "UNSAFE"
     has_high_heuristics = any(h.get("severity") == "HIGH" for h in heuristics)
@@ -275,6 +286,7 @@ def scan_suspicious_url():
         "reputation_details": reputation_res,
         "heuristics": heuristics,
         "verdict_explanation": verdict_explanation,
+        "whois": whois_info,
         "error": http_result.get("error"),
         "created_at": now
     }
