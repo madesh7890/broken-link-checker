@@ -160,5 +160,6 @@ def clear_history():
     db.url_scans.delete_many({"user_id": user_id})
     db.apk_scans.delete_many({"user_id": user_id})
     db.embedded_urls.delete_many({"user_id": user_id})
+    db.upload_chunks.delete_many({"user_id": user_id})
 
     return jsonify({"message": "Scan history cleared successfully."}), 200

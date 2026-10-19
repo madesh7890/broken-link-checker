@@ -2,7 +2,7 @@ import os
 import time
 import requests
 from urllib.parse import urlparse
-from datetime import datetime
+from datetime import datetime, timezone
 from config import Config
 
 class WhoisService:
@@ -62,9 +62,9 @@ class WhoisService:
                     registrar = attrs.get("registrar")
 
                     if creation_ts and isinstance(creation_ts, (int, float)):
-                        created_dt = datetime.utcfromtimestamp(creation_ts)
+                        created_dt = datetime.fromtimestamp(creation_ts, tz=timezone.utc)
                         result["created_date"] = created_dt.strftime("%Y-%m-%d")
-                        now = datetime.utcnow()
+                        now = datetime.now(timezone.utc)
                         diff = now - created_dt
                         days = max(0, diff.days)
                         result["age_days"] = days
@@ -110,8 +110,10 @@ class WhoisService:
                             created_dt = datetime.fromisoformat(clean_d)
                             break
                     if created_dt:
+                        if created_dt.tzinfo is None:
+                            created_dt = created_dt.replace(tzinfo=timezone.utc)
                         result["created_date"] = created_dt.strftime("%Y-%m-%d")
-                        days = max(0, (datetime.utcnow() - created_dt).days)
+                        days = max(0, (datetime.now(timezone.utc) - created_dt).days)
                         result["age_days"] = days
                         result["status"] = "VERIFIED"
                         if days < 30:

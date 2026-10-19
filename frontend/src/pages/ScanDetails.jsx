@@ -13,7 +13,8 @@ import {
   Layers,
   CheckCircle2,
   AlertTriangle,
-  FileDown
+  FileDown,
+  Calendar
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
@@ -160,11 +161,73 @@ export default function ScanDetails() {
               </div>
               <div style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px' }}>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block' }}>TLS Verification</span>
-                <span style={{ fontWeight: 600, color: scan.tls_valid === true ? 'var(--accent-emerald)' : 'var(--accent-rose)' }}>
+                <span style={{ fontWeight: 600, color: scan.tls_valid === true ? 'var(--accent-emerald)' : scan.tls_valid === false ? 'var(--accent-rose)' : 'var(--text-muted)' }}>
                   {scan.tls_valid === true ? 'Valid Certificate' : scan.tls_valid === false ? 'Validation Failed' : 'N/A'}
                 </span>
               </div>
+              {scan.whois && (
+                <div style={{ padding: '14px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', textTransform: 'uppercase', fontWeight: 700, marginBottom: '2px' }}>
+                    Domain Age (WHOIS)
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calendar size={14} style={{ color: 'var(--accent-purple)' }} />
+                    <span style={{
+                      fontSize: '0.88rem',
+                      fontWeight: 700,
+                      color: scan.whois?.is_newly_registered ? 'var(--accent-rose)' : '#fff'
+                    }}>
+                      {scan.whois?.age_formatted || 'Established'}
+                    </span>
+                  </div>
+                  {scan.whois?.registrar && (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={scan.whois.registrar}>
+                      Reg: {scan.whois.registrar}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Evidence-Based Heuristics (if suspicious scan) */}
+            {scan.heuristics && scan.heuristics.length > 0 && (
+              <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fff', marginBottom: '10px' }}>
+                  Identified Threat & Heuristic Indicators ({scan.heuristics.length})
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {scan.heuristics.map((h, i) => (
+                    <div key={i} style={{
+                      padding: '12px 16px',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-color)',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px'
+                    }}>
+                      <AlertTriangle size={16} style={{ color: h.severity === 'CRITICAL' || h.severity === 'HIGH' ? 'var(--accent-rose)' : 'var(--accent-amber)', flexShrink: 0, marginTop: '2px' }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                          <span style={{ fontWeight: 700, color: '#fff', fontSize: '0.85rem' }}>{h.title}</span>
+                          <span style={{
+                            fontSize: '0.65rem',
+                            fontWeight: 800,
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            backgroundColor: h.severity === 'CRITICAL' || h.severity === 'HIGH' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(245, 158, 11, 0.25)',
+                            color: h.severity === 'CRITICAL' || h.severity === 'HIGH' ? '#fca5a5' : '#fde68a'
+                          }}>
+                            {h.severity}
+                          </span>
+                        </div>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '2px', margin: 0 }}>{h.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Redirect Hops */}
             <div style={{ padding: '16px', backgroundColor: 'var(--bg-secondary)', borderRadius: '8px', marginBottom: '20px' }}>

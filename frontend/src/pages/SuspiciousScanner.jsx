@@ -14,10 +14,13 @@ import {
   Clipboard,
   Shield,
   Zap,
-  ArrowRight
+  ArrowRight,
+  FileDown,
+  Calendar
 } from 'lucide-react';
 import api from '../services/api';
 import StatusBadge from '../components/StatusBadge';
+import { generatePdfReport } from '../services/pdfReportGenerator';
 
 const SAMPLE_SUSPICIOUS = [
   { label: 'Shortened URL (Bitly)', url: 'https://bit.ly/3sample-link' },
@@ -297,14 +300,33 @@ export default function SuspiciousScanner() {
                     </div>
                   </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Telemetry Engine</span>
-                    <span style={{ fontSize: '0.88rem', color: '#fff', fontWeight: 600 }}>
-                      {scanResult.reputation_details?.service || 'Google Safe Browsing'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', display: 'block', marginTop: '4px' }}>
-                      {scanResult.created_at ? new Date(scanResult.created_at * 1000).toLocaleTimeString() : ''}
-                    </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => generatePdfReport(scanResult, 'url')}
+                      className="btn btn-secondary"
+                      style={{
+                        padding: '6px 14px',
+                        fontSize: '0.8rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        color: 'var(--accent-cyan)',
+                        borderColor: 'rgba(6, 182, 212, 0.4)'
+                      }}
+                    >
+                      <FileDown size={14} />
+                      <span>Export PDF Report</span>
+                    </button>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', textTransform: 'uppercase', fontWeight: 700 }}>Telemetry Engine</span>
+                      <span style={{ fontSize: '0.88rem', color: '#fff', fontWeight: 600 }}>
+                        {scanResult.reputation_details?.service || 'Google Safe Browsing'}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', display: 'block', marginTop: '2px' }}>
+                        {scanResult.created_at ? new Date(scanResult.created_at * 1000).toLocaleTimeString() : ''}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -391,6 +413,24 @@ export default function SuspiciousScanner() {
                     <span className="font-mono" style={{ fontSize: '0.8rem', color: '#fff', wordBreak: 'break-all' }}>
                       {scanResult.final_url || scanResult.submitted_url}
                     </span>
+                  </div>
+                  <div style={{ padding: '12px', backgroundColor: 'rgba(11, 16, 27, 0.6)', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', display: 'block', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>Domain Age (WHOIS)</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={14} style={{ color: 'var(--accent-purple)' }} />
+                      <span style={{
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: scanResult.whois?.is_newly_registered ? 'var(--accent-rose)' : '#fff'
+                      }}>
+                        {scanResult.whois?.age_formatted || 'Established'}
+                      </span>
+                    </div>
+                    {scanResult.whois?.registrar && (
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)', display: 'block', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={scanResult.whois.registrar}>
+                        Reg: {scanResult.whois.registrar}
+                      </span>
+                    )}
                   </div>
                 </div>
 

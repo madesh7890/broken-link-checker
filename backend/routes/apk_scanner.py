@@ -160,7 +160,7 @@ def upload_chunk():
     db = get_db()
     db.upload_chunks.update_one(
         {"upload_id": upload_id, "user_id": g.current_user["_id"], "index": index},
-        {"$set": {"data": Binary(data), "created_at": datetime.utcnow()}},
+        {"$set": {"data": Binary(data), "created_at": time.time()}},
         upsert=True
     )
     return jsonify({"ok": True, "index": index}), 200
