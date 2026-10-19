@@ -41,17 +41,52 @@ def analyze_url_heuristics(url: str, http_result: dict | None = None) -> list[di
             "description": f"Hostname '{hostname}' uses Punycode encoding, often used in IDN spoofing to imitate trusted brands with lookalike characters."
         })
 
-    # 3. Misleading brand spoofing in subdomain
-    trusted_brands = ["paypal", "google", "apple", "microsoft", "amazon", "netflix", "facebook", "instagram", "chase", "bankofamerica", "wellsfargo"]
-    for brand in trusted_brands:
-        if brand in hostname:
-            is_legit = hostname == f"{brand}.com" or hostname.endswith(f".{brand}.com")
-            if not is_legit:
+    # 3. Misleading brand spoofing in domain/subdomain
+    # Official brand-owned gTLDs (e.g. *.google, *.apple, *.amazon) are authentic
+    brand_tlds = {"google", "apple", "amazon"}
+    multi_part_tlds = {"co.in", "co.uk", "com.au", "com.br", "co.jp", "co.nz", "co.za", "org.uk"}
+
+    tld = parts[-1] if parts else ""
+    is_brand_tld = tld in brand_tlds
+
+    if not is_brand_tld:
+        if len(parts) >= 3 and f"{parts[-2]}.{parts[-1]}" in multi_part_tlds:
+            effective_domain = parts[-3]
+            subdomains = parts[:-3]
+        elif len(parts) >= 2:
+            effective_domain = parts[-2]
+            subdomains = parts[:-2]
+        else:
+            effective_domain = parts[0] if parts else ""
+            subdomains = []
+
+        trusted_brands = [
+            "paypal", "google", "apple", "microsoft", "amazon",
+            "netflix", "facebook", "instagram", "chase", "bankofamerica", "wellsfargo"
+        ]
+
+        for brand in trusted_brands:
+            # If the effective domain itself IS the brand (e.g. google.com, google.dev, apple.com), it's authentic!
+            if effective_domain == brand:
+                continue
+
+            # Case A: Brand name spoofed inside the registered domain (e.g. paypal-security-update.com, google-verify.xyz)
+            if brand in effective_domain:
                 findings.append({
                     "type": "BRAND_SPOOFING",
                     "severity": "HIGH",
                     "title": f"Possible Brand Spoofing ('{brand}')",
-                    "description": f"Domain '{hostname}' embeds the brand '{brand}' in a subdomain or spoofed host without being the authentic brand domain."
+                    "description": f"Domain '{hostname}' uses the brand '{brand}' inside its registered domain '{effective_domain}' without being the authentic brand."
+                })
+                break
+
+            # Case B: Brand name used in a subdomain of an unrelated domain (e.g. paypal.com.scamsite.org, google.login.attacker.xyz)
+            if any(brand in sub for sub in subdomains):
+                findings.append({
+                    "type": "BRAND_SPOOFING",
+                    "severity": "HIGH",
+                    "title": f"Possible Brand Spoofing in Subdomain ('{brand}')",
+                    "description": f"Domain '{hostname}' embeds the brand '{brand}' in a subdomain while pointing to an unrelated root domain '{effective_domain}'."
                 })
                 break
 
